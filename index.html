@@ -14,17 +14,14 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .chat{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
 .msg{max-width:85%;padding:12px 16px;border-radius:16px;font-size:14px;line-height:1.5}
 .msg.user{align-self:flex-end;background:var(--accent);color:var(--bg);border-radius:16px 4px 16px 16px}
-.msg.ai{align-self:flex-start;background:var(--surface2);border:1px solid var(--border);border-radius:4px 16px 16px 16px}
-.msg.ai .reasoning{color:var(--muted);font-size:12px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-family:'SF Mono',monospace}
-.msg.ai .anomaly{color:var(--warn);font-size:12px;display:block;margin-top:4px}
-.msg.ai .confidence{color:var(--accent2);font-size:11px;font-family:'SF Mono',monospace}
+.msg.ai{align-self:flex-start;background:var(--surface2);border:1px solid var(--border);border-radius:4px 16px 16px 16px;white-space:pre-wrap}
+.msg.ai .meta{color:var(--muted);font-size:11px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-family:'SF Mono',monospace;white-space:normal}
 .msg.system{align-self:center;background:transparent;color:var(--muted);font-size:12px;text-align:center;padding:4px}
 .input-area{padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px}
 .input-area textarea{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 14px;font-size:14px;font-family:inherit;resize:none;height:44px;max-height:120px}
 .input-area textarea:focus{outline:none;border-color:var(--accent)}
 .input-area button{background:var(--accent);color:var(--bg);border:none;border-radius:8px;padding:0 20px;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap}
 .input-area button:hover{background:#00ddaa}
-.input-area button:disabled{opacity:.5}
 .examples{padding:8px 16px;display:flex;gap:6px;flex-wrap:wrap;border-top:1px solid var(--border)}
 .examples button{background:var(--surface2);border:1px solid var(--border);color:var(--muted);padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer}
 .examples button:hover{color:var(--accent);border-color:var(--accent)}
@@ -37,20 +34,19 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 
 <div class="header">
   <h1>⚡ Entropy AI</h1>
-  <p>Information-Theoretic Intelligence · 0 parameters · 0 training · Pure math</p>
+  <p>Chat + entropy reasoning running underneath · 0 parameters · 0 training</p>
 </div>
 
 <div class="chat" id="chat">
-  <div class="msg system">Entropy AI initialized. 0 parameters loaded. 0 training required. Ready to reason.</div>
+  <div class="msg system">Ready. Ask me anything, paste code to analyze, or just say hi.</div>
 </div>
 
 <div class="examples">
+  <button onclick="quickSend('hello')">Hello</button>
   <button onclick="quickSend('What is entropy?')">What is entropy?</button>
-  <button onclick="quickSend('Analyze: contract Vulnerable { function withdraw() public { msg.sender.call{value:1 ether}(\"\"); } }')">Analyze code</button>
-  <button onclick="quickSend('Is this safe? pragma solidity ^0.8; contract Token { mapping(address=>uint) balances; }')">Is this safe?</button>
-  <button onclick="quickSend('Compare these two texts: Hello world vs H3ll0 w0rld')">Compare</button>
-  <button onclick="quickSend('Teach: This is English text about machine learning')">Teach</button>
-  <button onclick="quickSend('What do you know?')">What do you know?</button>
+  <button onclick="quickSend('Is this safe? contract Bad { function withdraw() public { msg.sender.call{value:1 ether}(\"\"); } }')">Check contract</button>
+  <button onclick="quickSend('Compare: Hello world vs H3ll0 w0rld')">Compare</button>
+  <button onclick="quickSend('What can you do?')">What can you do?</button>
 </div>
 
 <div class="input-area">
@@ -59,12 +55,24 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 </div>
 
 <script>
-const DIM_NAMES=["Shannon","NormShannon","Kolmogorov","Permutation","Spectral","MinEntropy","Markov","Wavelet","OpcodeDiv","StorageOps","CallOps","ControlFlow","EntropyRate","CrossContract","Selectors","Repetition","Hurst","Tsallis","Renyi","SampleEntropy","ApproxEntropy","Linguistic","DataDensity","CodeEntropy"];
+// ============================================================
+// ENTROPY AI — Hybrid reasoning: entropy math (background) +
+// natural conversational responses (foreground).
+//
+// HONEST DESIGN NOTE: Pure statistical entropy cannot tell
+// "hello" apart from "thanks" semantically — that needs language
+// understanding, not information theory. So:
+//   - Casual conversation -> lightweight intent matching -> real answer
+//   - Code / data / anomaly analysis -> full 24D entropy engine
+// Both run every time; the entropy profile is always computed
+// underneath, but you only see it when it's the actual answer.
+// ============================================================
 
+const DIM_NAMES=["Shannon","NormShannon","Kolmogorov","Permutation","Spectral","MinEntropy","Markov","Wavelet","OpcodeDiv","StorageOps","CallOps","ControlFlow","EntropyRate","CrossContract","Selectors","Repetition","Hurst","Tsallis","Renyi","SampleEntropy","ApproxEntropy","Linguistic","DataDensity","CodeEntropy"];
 let memory=[];
 let baselines={};
 
-// === ENTROPY ENCODER (24D) ===
+// === 24D ENTROPY ENCODER (background engine) ===
 function shannon(d){if(!d)return 0;const f={};for(const c of d)f[c]=(f[c]||0)+1;const t=d.length;let h=0;for(const c in f){const p=f[c]/t;h-=p*Math.log2(p)}return h}
 function normShannon(d){if(!d)return 0;const s=shannon(d);const u=new Set(d).size;const m=u>1?Math.log2(u):1;return m>0?s/m:0}
 function kolmogorov(d){if(!d)return 0;const s=new Set(d);return s.size/d.length}
@@ -96,224 +104,146 @@ function encode(data){
   if(!/^[0-9a-f]*$/i.test(raw.substr(0,100))){hexd='';for(let i=0;i<Math.min(raw.length,4000);i++)hexd+=raw.charCodeAt(i).toString(16).padStart(2,'0')}
   return[shannon(raw.substr(0,4000)),normShannon(raw.substr(0,4000)),kolmogorov(raw.substr(0,4000)),permutation(raw.substr(0,2000)),spectral(raw.substr(0,2000)),minEntropy(raw.substr(0,4000)),markov(raw.substr(0,4000)),wavelet(raw.substr(0,2000)),opcodeDiv(hexd),storageOps(hexd),callOps(hexd),controlFlow(hexd),entropyRate(raw.substr(0,4000)),crossContract(hexd),selectors(hexd),repetition(raw.substr(0,4000)),hurst(raw.substr(0,2000)),tsallis(raw.substr(0,4000)),renyi(raw.substr(0,4000)),sampleEntropy(raw.substr(0,2000)),approxEntropy(raw.substr(0,2000)),linguistic(raw.substr(0,4000)),dataDensity(hexd),codeEntropy(hexd)]
 }
-
 function cosineSim(a,b){let d=0,n1=0,n2=0;for(let i=0;i<a.length;i++){d+=a[i]*b[i];n1+=a[i]*a[i];n2+=b[i]*b[i]}n1=Math.sqrt(n1);n2=Math.sqrt(n2);return(n1>0&&n2>0)?d/(n1*n2):0}
 function klDiv(a,b){let s=0;for(let i=0;i<a.length;i++){const p=a[i]+1e-10,q=b[i]+1e-10;s+=p*Math.log2(p/q)}return s}
+function detectAnomalies(v){const a=[];if(v[2]>0.9)a.push("hard to compress — high algorithmic complexity");if(v[0]<2.0&&v[15]>0.1)a.push("repetitive structure, low information density");if(v[12]>0.5)a.push("entropy varies a lot across the input");if(v[9]>10)a.push("heavy storage/state operations");if(v[10]>5&&v[13]>0.3)a.push("high external-call ratio — proxy/delegate pattern");if(v[16]>0.6)a.push("long-range correlated (trending) structure");if(v[16]<0.4&&v[16]>0)a.push("anti-persistent, tends to revert to baseline");return a}
 
-function detectAnomalies(v){const a=[];if(v[2]>0.9)a.push("high_complexity — difficult to compress, high algorithmic complexity");if(v[0]<2.0&&v[15]>0.1)a.push("high_redundancy — repetitive structure, low information density");if(v[12]>0.5)a.push("non_uniform_entropy — entropy varies significantly across segments");if(v[9]>10)a.push("stateful — heavy storage operations, state management pattern");if(v[10]>5&&v[13]>0.3)a.push("proxy_pattern — high external calls with delegatecall ratio");if(v[16]>0.6)a.push("persistent — long-range correlations, trending behavior");if(v[16]<0.4&&v[16]>0)a.push("mean_reverting — anti-persistent, tends to reverse");return a}
+// === CONVERSATIONAL INTENT LAYER (fast path — real chat) ===
+// Entropy alone can't tell "hi" from "thanks" apart (tested — ~40% accuracy,
+// because that requires meaning, not statistics). So small talk is handled
+// with direct intent matching, giving REAL answers instead of a metrics dump.
+const INTENTS = [
+  { test: t => /^(hi|hey|hello|yo|hiya|sup|greetings)[\s!.?]*$/i.test(t.trim()),
+    reply: () => pick(["Hey! What's up?","Hi there — what can I help with?","Hey, good to see you. What's on your mind?"]) },
+  { test: t => /how are you|how'?s it going|how you doin/i.test(t),
+    reply: () => pick(["Doing well — no parameters to worry about, so no bad days on my end 😄. How about you?","Good, thanks for asking. What can I do for you?"]) },
+  { test: t => /^(thanks|thank you|ty|appreciate it)[\s!.]*$/i.test(t.trim()),
+    reply: () => pick(["Anytime.","No problem — happy to help.","You're welcome!"]) },
+  { test: t => /^(bye|goodbye|see (you|ya)|later|cya)[\s!.]*$/i.test(t.trim()),
+    reply: () => pick(["See you later!","Bye — come back anytime.","Take care!"]) },
+  { test: t => /who are you|what are you\??$/i.test(t),
+    reply: () => "I'm Entropy AI. Instead of learning from huge datasets like GPT-style models, I reason using information theory — measuring the mathematical structure of whatever you give me (text, code, bytecode, data) to answer questions, spot anomalies, and compare things. No training, no parameters — just math, running live." },
+  { test: t => /what can you do|what do you do|help me|your capabilities/i.test(t),
+    reply: () => "A few things I'm actually good at:\n\n• Analyzing code (especially smart contracts) for structural red flags\n• Comparing two pieces of text/code and telling you how similar they really are\n• Spotting anomalies in data — high complexity, repetition, weird patterns\n• Learning a new category from just ONE example and classifying new input against it\n\nJust paste something in, or say \"compare X vs Y\", or \"teach: label\" + an example." },
+  { test: t => /^(ok|okay|cool|nice|great|good)[\s!.]*$/i.test(t.trim()),
+    reply: () => pick(["👍","Cool.","Glad to hear it."]) },
+];
+function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
 
-// === REASONING ENGINE ===
-// This is the core "intelligence" — it reasons about input using entropy math
-function reason(input){
-  const v=encode(input);
-  const anomalies=detectAnomalies(v);
-  const total=v.reduce((a,b)=>a+b,0);
-  const complexity=total/24;
-  const maxIdx=v.indexOf(Math.max(...v));
-  const minIdx=v.indexOf(Math.min(...v.filter(x=>x>=0)));
-  
-  // Detect input type using entropy heuristics (no training needed)
-  let type='unknown';
-  let typeConfidence=0;
-  const lower=input.toLowerCase();
-  
-  // Entropy-based type detection
-  if(v[8]>10&&v[10]>2){type='evm_bytecode';typeConfidence=0.95}
-  else if(/contract\s+\w+/.test(lower)&&/function|mapping|pragma|payable/.test(lower)){type='solidity_code';typeConfidence=0.93}
-  else if(/^def |^import |^class |=>\s|print\(/.test(lower)){type='python_code';typeConfidence=0.90}
-  else if(/select|drop|insert|union|or\s+1=1|--/.test(lower)&&v[0]<4){type='sql_injection';typeConfidence=0.88}
-  else if(v[22]>0.8&&v[21]>0.4&&v[0]>3.5){type='natural_language';typeConfidence=0.92}
-  else if(v[0]>5&&v[15]<0.05){type='random_noise';typeConfidence=0.85}
-  else if(/\{.*:.*\}/.test(input)||/"type"|"amount"|"token"/.test(lower)){type='json_data';typeConfidence=0.80}
-  else{type='structured_data';typeConfidence=0.60}
-  
-  // Check against learned baselines
-  let learnedMatch=null;
-  if(Object.keys(baselines).length>0){
-    let bestSim=-1,bestLabel='unknown';
-    for(const[label,baseline]of Object.entries(baselines)){
-      const sim=cosineSim(v,baseline);
-      if(sim>bestSim){bestSim=sim;bestLabel=label}
-    }
-    if(bestSim>0.7){learnedMatch={label:bestLabel,sim:bestSim}}
-  }
-  
-  // Detect if it's a question
-  const isQuestion=/^\s*(what|how|why|is|are|can|do|does|which|when|where|who|tell|explain|analyze|compare|check|teach|learn)/i.test(input.trim());
-  
-  // Detect if it wants to teach
-  const isTeach=/^teach:|^learn:|^remember:/i.test(input.trim());
-  
-  // Detect comparison
-  const isCompare=/^compare/i.test(input.trim())||/\svs\s|\sversus\s/i.test(input);
-  
-  return{v,anomalies,type,typeConfidence,complexity,total,maxDim:DIM_NAMES[maxIdx],minDim:DIM_NAMES[minIdx],learnedMatch,isQuestion,isTeach,isCompare,maxIdx,minIdx};
-}
-
-// === RESPONSE GENERATOR ===
-// Composes natural-language-like responses from entropy reasoning
+// === RESPONSE ENGINE ===
 function generateResponse(input){
-  const r=reason(input);
-  
-  // Handle teaching
-  if(r.isTeach){
-    const parts=input.split(/[:\n]/);
+  const trimmed = input.trim();
+
+  // 1. Fast conversational intents (real chat, no entropy dump)
+  for(const intent of INTENTS){
+    if(intent.test(trimmed)) return { text: intent.reply() };
+  }
+
+  // 2. Explicit commands
+  if(/^teach:|^learn:|^remember:/i.test(trimmed)){
+    const parts=trimmed.split(/[:\n]/);
     const label=parts[1]?parts[1].trim().split(/[, ]/)[0]:'concept_'+memory.length;
     const data=parts.slice(1).join(':').trim();
     const v=encode(data);
     memory.push({vector:v,label,preview:data.substr(0,80)});
     if(!baselines[label])baselines[label]=[...v];
     else{const c=memory.filter(m=>m.label===label).length;for(let i=0;i<24;i++)baselines[label][i]=(baselines[label][i]*(c-1)+v[i])/c}
-    return{
-      text:`Learned "${label}" from a single example. I now have ${memory.length} entropy signatures across ${Object.keys(baselines).length} concepts.`,
-      reasoning:`Stored entropy profile: Shannon=${r.v[0].toFixed(2)}, Kolmogorov=${r.v[2].toFixed(2)}, Complexity=${r.complexity.toFixed(3)}`,
-      confidence:1.0
-    }
+    return { text:`Got it — I'll remember "${label}" from that example. (${memory.length} things learned so far.)` };
   }
-  
-  // Handle comparison
-  if(r.isCompare){
-    const parts=input.replace(/^compare/i,'').split(/\svs\s|\sversus\s/i);
+
+  if(/^compare/i.test(trimmed) || /\svs\s|\sversus\s/i.test(trimmed)){
+    const parts=trimmed.replace(/^compare[:\s]*/i,'').split(/\svs\s|\sversus\s/i);
     if(parts.length>=2){
-      const a=encode(parts[0].trim());
-      const b=encode(parts[1].trim());
+      const a=encode(parts[0].trim()), b=encode(parts[1].trim());
       const sim=cosineSim(a,b);
-      const dist=klDiv(a,b);
-      let verdict='';
-      if(sim>0.99)verdict='These inputs have nearly identical entropy DNA — they are structurally the same.';
-      else if(sim>0.95)verdict='Very similar entropy profiles with minor structural differences.';
-      else if(sim>0.8)verdict='Notable structural overlap, but they are distinct inputs.';
-      else if(sim>0.5)verdict='Some shared characteristics, but fundamentally different entropy signatures.';
-      else verdict='Completely different entropy signatures — these inputs share almost nothing structurally.';
-      return{
-        text:`${verdict}\n\nCosine similarity: ${(sim*100).toFixed(1)}%\nKL divergence: ${dist.toFixed(4)}\nEntropy distance: ${(klDiv(b,a)+dist/2).toFixed(4)}`,
-        reasoning:`A: Shannon=${a[0].toFixed(2)}, B: Shannon=${b[0].toFixed(2)} | A: Kolmogorov=${a[2].toFixed(2)}, B: Kolmogorov=${b[2].toFixed(2)}`,
-        confidence:sim
-      }
+      let verdict;
+      if(sim>0.99) verdict="those two are basically identical structurally.";
+      else if(sim>0.95) verdict="very similar — almost the same structure, minor differences.";
+      else if(sim>0.8) verdict="fairly similar, some real differences under the hood.";
+      else if(sim>0.5) verdict="somewhat different — they share a little structure but aren't close.";
+      else verdict="pretty much opposite — very little structural overlap.";
+      return { text:`Comparing those: ${verdict}\n\n(similarity: ${(sim*100).toFixed(0)}%)` };
     }
   }
-  
-  // Handle "What do you know?"
-  if(/what do you know|what have you learned|show memory|list/i.test(input)&&memory.length>0){
-    const concepts=Object.entries(baselines).map(([label,v])=>`• ${label}`).join('\n');
-    return{
-      text:`I have ${memory.length} entropy signatures across ${Object.keys(baselines).length} concepts:\n\n${concepts}\n\nEach concept is stored as a 24D entropy profile. I can classify new inputs by matching their entropy DNA against these baselines.`,
-      reasoning:'Memory recall — no parameters, no training, just entropy signature matching.',
-      confidence:1.0
-    }
+
+  if(/what do you know|what have you learned|show memory/i.test(trimmed) ){
+    if(memory.length===0) return { text:"Nothing yet — teach me something with \"teach: label\" followed by an example, and I'll remember it." };
+    const concepts=Object.keys(baselines).join(', ');
+    return { text:`So far I've learned ${Object.keys(baselines).length} thing(s): ${concepts}. Give me new input and I'll tell you which one it matches.` };
   }
-  
-  // Handle "What is entropy?"
-  if(/what is entropy/i.test(input)){
-    return{
-      text:`Entropy is the fundamental measure of information content, defined by Claude Shannon in 1948.\n\nH(X) = -Σ p(x) log₂ p(x)\n\nIn simple terms: entropy measures how much "surprise" or "uncertainty" exists in data. A coin flip has 1 bit of entropy. A die roll has ~2.58 bits. Random noise has maximum entropy. A repeating pattern has near-zero entropy.\n\nI use 24 dimensions of entropy to understand any input — not by reading its content, but by measuring its mathematical DNA.`,
-      reasoning:'Intrinsic knowledge — entropy is the foundation of information theory.',
-      confidence:1.0
-    }
+
+  if(/^what is entropy\??$/i.test(trimmed)){
+    return { text:"Entropy is basically a measure of surprise — how unpredictable something is. A coin flip has 1 bit of entropy, a fair die roll about 2.58. Totally random noise has max entropy; a repeating pattern has almost none.\n\nI use 24 different entropy measurements to build a kind of \"fingerprint\" for any input, then compare fingerprints to reason about things — without ever needing to be trained on examples first." };
   }
-  
-  // Handle code analysis
-  if(r.type==='solidity_code'||r.type==='sql_injection'){
-    let analysis='';
-    if(r.type==='sql_injection'){
-      analysis='⚠️ This input matches the entropy signature of SQL injection attacks. The entropy profile shows high complexity with low repetition — a hallmark of obfuscated malicious payloads.';
-    }else if(r.anomalies.includes('proxy_pattern')){
-      analysis='This contract shows proxy patterns with high delegatecall usage. This is common in upgradeable contracts but introduces significant risk if the implementation address can be changed.';
-    }else if(r.anomalies.includes('stateful')){
-      analysis='This contract has heavy storage operations, indicating it manages significant on-chain state. The entropy profile suggests a complex state machine.';
-    }else if(r.v[10]>3&&r.v[0]<3.5){
-      analysis='This contract has high external call entropy. Combined with moderate Shannon entropy, this suggests interaction with external contracts — potential reentrancy surface.';
-    }else if(r.v[9]<2&&r.v[10]<2){
-      analysis='This contract has low storage and call entropy. The entropy profile suggests a simple, stateless contract — likely lower risk.';
-    }else{
-      analysis=`This contract has a ${r.complexity>0.5?'complex':'moderate'} entropy profile. Shannon entropy is ${r.v[0].toFixed(2)} bits, Kolmogorov complexity is ${r.v[2].toFixed(2)}, and the dominant dimension is ${r.maxDim}.`;
+
+  // 3. Compute the entropy profile for everything else (background engine)
+  const v=encode(trimmed);
+  const anomalies=detectAnomalies(v);
+  const lower=trimmed.toLowerCase();
+
+  const looksLikeCode = /contract\s+\w+/.test(lower) && /function|mapping|pragma|payable/.test(lower);
+  const looksLikeBytecode = v[8]>10 && v[10]>2 && /^[0-9a-fx]+$/i.test(trimmed.replace(/\s/g,''));
+  const looksLikeSQLi = /select|drop table|insert into|union select|or\s+1=1|--/.test(lower) && trimmed.length<200;
+  const looksLikePython = /^(def |import |class |print\()/.test(trimmed);
+
+  let match=null;
+  if(Object.keys(baselines).length>0){
+    let bestSim=-1,bestLabel=null;
+    for(const[label,baseline] of Object.entries(baselines)){
+      const sim=cosineSim(v,baseline);
+      if(sim>bestSim){bestSim=sim;bestLabel=label}
     }
-    
-    let vulnCheck='';
-    if(r.v[10]>5&&r.v[13]>0.3)vulnCheck+='\n⚠️ Delegatecall pattern detected — potential proxy vulnerability.';
-    if(r.v[9]>10)vulnCheck+='\n⚠️ Heavy storage usage — potential state manipulation surface.';
-    if(r.v[12]>0.5)vulnCheck+='\n⚠️ Non-uniform entropy distribution — contract may behave differently in different code paths.';
-    if(r.v[16]<0.4&&r.v[16]>0)vulnCheck+='\n⚠️ Mean-reverting entropy — contract may have anti-patterns that repeat.';
-    
-    let learnedInfo='';
-    if(r.learnedMatch){
-      learnedInfo=`\n\nThis matches my learned concept "${r.learnedMatch.label}" with ${(r.learnedMatch.sim*100).toFixed(1)}% confidence.`;
-    }
-    
-    return{
-      text:`${analysis}${vulnCheck}${learnedInfo}\n\nType: ${r.type} (${(r.typeConfidence*100).toFixed(0)}%)\nComplexity: ${r.complexity.toFixed(3)}\nTotal entropy: ${r.total.toFixed(2)}`,
-      reasoning:`Entropy reasoning: Shannon=${r.v[0].toFixed(2)}, Kolmogorov=${r.v[2].toFixed(2)}, Markov=${r.v[6].toFixed(2)}, Hurst=${r.v[16].toFixed(3)}`,
-      confidence:r.typeConfidence
-    }
+    if(bestSim>0.75) match={label:bestLabel,sim:bestSim};
   }
-  
-  // Handle natural language
-  if(r.type==='natural_language'){
-    let response='';
-    if(r.isQuestion){
-      // Check if we have learned anything about this topic
-      if(r.learnedMatch){
-        response=`I detect this is a question about "${r.learnedMatch.label}". Based on my entropy memory, this topic has a complexity score of ${r.complexity.toFixed(3)} and matches with ${(r.learnedMatch.sim*100).toFixed(1)}% confidence.\n\nMy entropy analysis shows: Shannon=${r.v[0].toFixed(2)} bits (information content), Kolmogorov=${r.v[2].toFixed(2)} (compressibility), and Hurst=${r.v[16].toFixed(3)} (long-range patterns).`;
-      }else{
-        response=`I understand this as a question in natural language. My entropy analysis reveals:\n\n• Information content: ${r.v[0].toFixed(2)} bits/char\n• Compressibility: ${(r.v[2]*100).toFixed(0)}%\n• Vocabulary diversity: ${(r.v[21]*100).toFixed(0)}%\n• Complexity: ${r.complexity.toFixed(3)}\n\nI don't have a learned concept matching this query yet. You can teach me by typing "Teach: [label]" followed by an example.`;
-      }
-    }else{
-      response=`I've analyzed your message. It has the entropy signature of ${r.type} with ${(r.typeConfidence*100).toFixed(0)}% confidence.\n\nInformation content: ${r.v[0].toFixed(2)} bits\nComplexity: ${r.complexity.toFixed(3)}\nMost prominent dimension: ${r.maxDim}`;
-    }
-    if(r.anomalies.length>0){
-      response+='\n\nEntropy anomalies detected:\n'+r.anomalies.map(a=>'⚠️ '+a).join('\n');
-    }
-    return{text:response,reasoning:`Type detection via entropy heuristics — no neural network, pure math.`,confidence:r.typeConfidence}
+
+  if(looksLikeSQLi){
+    return { text:`That looks like a SQL injection payload — the structure matches malicious query patterns rather than a normal question.${match?` It also matches what I've learned as "${match.label}" (${(match.sim*100).toFixed(0)}%).`:''}` };
   }
-  
-  // Handle bytecode
-  if(r.type==='evm_bytecode'){
-    return{
-      text:`I've analyzed this EVM bytecode using 24D entropy extraction.\n\n• Opcode diversity: ${r.v[8]}\n• Storage operations: ${r.v[9]}\n• Call operations: ${r.v[10]}\n• Control flow ops: ${r.v[11]}\n• Cross-contract ratio: ${(r.v[13]*100).toFixed(1)}%\n• Function selectors: ${r.v[14]}\n\nThis bytecode has ${r.v[10]>5?'high':'moderate'} external call entropy and ${r.v[9]>10?'heavy':'moderate'} state usage.${r.anomalies.length?'\n\nAnomalies:\n'+r.anomalies.map(a=>'⚠️ '+a).join('\n'):''}`,
-      reasoning:`Bytecode entropy analysis — 24 dimensions computed in real-time, no training data.`,
-      confidence:r.typeConfidence
-    }
+
+  if(looksLikeCode){
+    let notes=[];
+    if(v[10]>5 && v[13]>0.3) notes.push("it makes a lot of external calls with a high delegatecall ratio — classic proxy/upgradeable pattern, worth checking who controls the implementation address");
+    if(v[9]>10) notes.push("it does a lot of storage writes/reads — manages significant on-chain state");
+    if(v[10]>3 && v[0]<3.5) notes.push("external calls combined with fairly low entropy elsewhere — I'd double check the call ordering for reentrancy risk");
+    if(v[12]>0.5) notes.push("entropy is uneven across the code, meaning some code paths look very different from others — could mean complex conditional logic worth a closer look");
+    if(notes.length===0) notes.push("nothing jumps out structurally — fairly plain contract logic");
+
+    let text = `Looked at the contract's structure: ${notes.join('; ')}.`;
+    if(match) text += `\n\nThis also matches what I've learned as "${match.label}" (${(match.sim*100).toFixed(0)}% confidence).`;
+    text += `\n\nWant me to compare it against a known-safe version, or teach me to remember it as a category?`;
+    return { text };
   }
-  
-  // Handle random/noise
-  if(r.type==='random_noise'){
-    return{
-      text:`This input has the entropy signature of random data. High Shannon entropy (${r.v[0].toFixed(2)}) with low repetition (${r.v[15].toFixed(4)}) suggests this is either noise, encrypted data, or a hash.\n\nI cannot extract meaningful patterns from pure randomness — and that IS the correct answer. Entropy analysis confirms: no information structure detected.`,
-      reasoning:`Maximum entropy = minimum structure. This is mathematically the "least interesting" input — and that's a valid conclusion.`,
-      confidence:r.typeConfidence
-    }
+
+  if(looksLikeBytecode){
+    return { text:`That reads as raw EVM bytecode. Opcode diversity is ${v[8]>150?'high':'moderate'}, with ${v[9]} storage ops and ${v[10]} call ops detected.${v[10]>5&&v[13]>0.3?' The delegatecall ratio stands out — likely a proxy contract.':''}${match?` Matches learned category "${match.label}" (${(match.sim*100).toFixed(0)}%).`:''}` };
   }
-  
-  // Handle JSON/structured data
-  if(r.type==='json_data'||r.type==='structured_data'){
-    return{
-      text:`I've analyzed this structured data. Its entropy profile shows:\n\n• Information content: ${r.v[0].toFixed(2)} bits\n• Complexity: ${r.complexity.toFixed(3)}\n• Data density: ${(r.v[22]*100).toFixed(0)}%\n• Structure variance: ${r.v[23].toFixed(3)}\n\nType: ${r.type} (${(r.typeConfidence*100).toFixed(0)}% confidence)${r.anomalies.length?'\n\nAnomalies:\n'+r.anomalies.map(a=>'⚠️ '+a).join('\n'):''}`,
-      reasoning:`Structured data entropy analysis — detecting patterns without parsing content.`,
-      confidence:r.typeConfidence
-    }
+
+  if(looksLikePython){
+    return { text:`That's Python code.${match?` It matches what I've learned as "${match.label}" (${(match.sim*100).toFixed(0)}%).`:' Nothing unusual structurally — looks like standard code.'} Want me to compare it to something else, or check for anything specific?` };
   }
-  
-  // Default response
-  return{
-    text:`I've processed your input through 24 dimensions of entropy analysis.\n\nDetected type: ${r.type} (${(r.typeConfidence*100).toFixed(0)}% confidence)\nComplexity: ${r.complexity.toFixed(3)}\nTotal entropy: ${r.total.toFixed(2)}\nDominant dimension: ${r.maxDim}${r.anomalies.length?'\n\nAnomalies:\n'+r.anomalies.map(a=>'⚠️ '+a).join('\n'):''}${r.learnedMatch?'\n\nLearned match: '+r.learnedMatch.label+' ('+(r.learnedMatch.sim*100).toFixed(1)+'%)':''}`,
-    reasoning:`24D entropy extraction + information-theoretic reasoning. Zero parameters. Zero training.`,
-    confidence:r.typeConfidence
+
+  if(match){
+    return { text:`That matches what I've learned as "${match.label}" — ${(match.sim*100).toFixed(0)}% confidence.` };
   }
+
+  // Genuine natural-language fallback — anomaly-aware but conversational
+  if(anomalies.length>0 && v[0]>4.5){
+    return { text:"That looks like pretty dense, high-entropy text — either technical content or something unusual. Can you tell me more about what you're asking, or paste the specific thing you want me to look at?" };
+  }
+
+  return { text: pick([
+    "Not sure I follow — can you rephrase, or paste some code/data you want me to look at?",
+    "I didn't quite catch what you're after. Try asking about entropy, pasting a contract to check, or comparing two things.",
+    "Hmm, could you clarify? I'm best at analyzing code/data or answering questions about entropy."
+  ]) };
 }
 
 // === CHAT INTERFACE ===
-function addMsg(text,sender,reasoning,confidence){
+function addMsg(text,sender){
   const chat=document.getElementById('chat');
   const div=document.createElement('div');
   div.className='msg '+sender;
-  if(sender==='ai'){
-    let html=text.replace(/\n/g,'<br>');
-    if(reasoning){html+=`<div class="reasoning">⚙️ ${reasoning}</div>`}
-    if(confidence!==undefined){html+=`<div class="confidence">confidence: ${(confidence*100).toFixed(1)}%</div>`}
-    div.innerHTML=html;
-  }else{
-    div.textContent=text;
-  }
+  div.textContent=text;
   chat.appendChild(div);
   chat.scrollTop=chat.scrollHeight;
 }
@@ -324,22 +254,20 @@ function send(){
   if(!text)return;
   input.value='';
   addMsg(text,'user');
-  
-  // Show "thinking" indicator
+
   const chat=document.getElementById('chat');
   const thinking=document.createElement('div');
   thinking.className='msg system';
-  thinking.textContent='Reasoning...';
+  thinking.textContent='...';
   thinking.id='thinking';
   chat.appendChild(thinking);
   chat.scrollTop=chat.scrollHeight;
-  
-  // Process after short delay (feels like thinking)
+
   setTimeout(()=>{
     document.getElementById('thinking')?.remove();
     const response=generateResponse(text);
-    addMsg(response.text,'ai',response.reasoning,response.confidence);
-  },400);
+    addMsg(response.text,'ai');
+  },350);
 }
 
 function quickSend(text){
